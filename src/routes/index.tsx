@@ -72,7 +72,7 @@ export default component$(() => {
   });
 
   return (
-    <div class="h-screen w-full flex justify-center items-center">
+    <div class="min-h-screen w-full flex justify-center items-center">
       <div class="p-20 min-w-[50%] rounded-xl bg-clip-padding backdrop-filter backdrop-blur-xl bg-opacity-60 border border-gray-200">
         <h1 class="text-white text-center font-bold text-6xl mb-8">
           SGA <span>🧠</span>
