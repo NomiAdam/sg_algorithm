@@ -26,6 +26,12 @@ export const FINISH = 5;
 export const VICTORIA = 3;
 export const MULTIPLICATION = 5;
 
+export const onlyUnique = (
+  value: "P" | "D",
+  index: number,
+  self: ("P" | "D")[]
+) => self.indexOf(value) === index;
+
 export default component$(() => {
   const score = useSignal<("D" | "P")[]>([]);
   const state = useStore<IState>({
@@ -43,7 +49,7 @@ export default component$(() => {
     track(state, "malus");
     track(state, "bonus");
     track(state, "count");
-    if (score.value.length === 1 && score.value.at(0) === "P") {
+    if (score.value.filter(onlyUnique).length === 1) {
       state.score = state.count;
       return;
     }
@@ -62,7 +68,10 @@ export default component$(() => {
     if (state.score > state.victoria) {
       return state.count;
     }
-    return Math.min(state.count, state.score * state.multiplication);
+    return Math.max(
+      Math.min(state.count, state.score * state.multiplication),
+      1
+    );
   });
 
   const isVictoriaDeck = useResource$<boolean>(({ track }) => {
