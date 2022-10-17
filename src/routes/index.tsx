@@ -99,8 +99,8 @@ export default component$(() => {
             </label>
             <input
               type="number"
-              name="malus"
-              id="malues"
+              name="finishThreshold"
+              id="finishThreshold"
               min={0}
               value={state.finish}
               onInput$={(ev) =>
@@ -118,8 +118,8 @@ export default component$(() => {
             </label>
             <input
               type="number"
-              name="malus"
-              id="malus"
+              name="victoriaThreshold"
+              id="victoriaThreshold"
               min={0}
               value={state.victoria}
               onInput$={(ev) =>
@@ -161,7 +161,6 @@ export default component$(() => {
               name="bonus"
               id="bonus"
               step=".1"
-              min={0}
               value={state.bonus}
               onInput$={(ev) => {
                 state.bonus = parseInt((ev.target as HTMLInputElement).value);
@@ -178,7 +177,6 @@ export default component$(() => {
               name="malus"
               id="malues"
               step=".1"
-              max={0}
               value={state.malus}
               onInput$={(ev) =>
                 (state.malus = parseInt((ev.target as HTMLInputElement).value))
