@@ -49,7 +49,10 @@ export default component$(() => {
     track(state, "malus");
     track(state, "bonus");
     track(state, "count");
-    if (score.value.filter(onlyUnique).length === 1) {
+    if (
+      score.value.filter(onlyUnique).length === 1 &&
+      score.value.at(0) == "P"
+    ) {
       state.score = state.count;
       return;
     }
