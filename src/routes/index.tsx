@@ -49,6 +49,13 @@ export default component$(() => {
     track(state, "malus");
     track(state, "bonus");
     track(state, "count");
+    const stringScore = score.value.join("");
+    if (["PD", "DPD", "DDDD"].includes(stringScore)) {
+      score.value = ["D"];
+    }
+    if (stringScore === "DPPP") {
+      score.value = ["P"];
+    }
     if (
       score.value.filter(onlyUnique).length === 1 &&
       score.value.at(0) == "P"
