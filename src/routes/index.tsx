@@ -239,18 +239,18 @@ export default component$(() => {
         <div class="flex items-center justify-center">
           <div class="inline-flex rounded-md shadow">
             <button
-              onClick$={() => (score.value = [...score.value, "P"])}
-              class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium text-white hover:bg-indigo-700"
-            >
-              Později
-            </button>
-          </div>
-          <div class="ml-3 inline-flex rounded-md shadow">
-            <button
               onClick$={() => (score.value = [...score.value, "D"])}
               class="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-5 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
             >
               Dříve
+            </button>
+          </div>
+          <div class="ml-3 inline-flex rounded-md shadow">
+            <button
+              onClick$={() => (score.value = [...score.value, "P"])}
+              class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium text-white hover:bg-indigo-700"
+            >
+              Později
             </button>
           </div>
         </div>
