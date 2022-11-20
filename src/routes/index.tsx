@@ -1,29 +1,60 @@
 import {
   component$,
   useStore,
-  useSignal,
   useResource$,
   Resource,
   useWatch$,
+  useServerMount$,
+  createContext,
+  useContextProvider,
+  useContext,
+  useSignal,
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 
 interface IState {
   bonus: number;
   malus: number;
-  count: number;
-  score: number;
   finish: number;
   victoria: number;
   multiplication: number;
+  initialFace: TCardFace;
+}
+
+interface ITextbook {
+  name: string;
+  deckIds: number[];
+  textbookId: number;
+}
+
+interface IDeck {
+  id: number;
+  name: string;
+}
+
+interface ITranslation {
+  translation: string;
+}
+
+interface ICard {
+  cardId: number;
+  imageUrl: string;
+  translations: ITranslation[];
+}
+
+interface IRemoteStore {
+  decks?: IDeck[];
+  cards?: ICard[];
+  deckId?: number;
+  textbookId?: number;
+  textbooks?: ITextbook[];
 }
 
 export const BONUS = 1;
-export const MALUS = -0.5;
-export const COUNT = 20;
-export const SCORE = 0;
 export const FINISH = 5;
+export const MALUS = -0.5;
 export const VICTORIA = 3;
+export const INITIAL_FACE = "F";
 export const MULTIPLICATION = 5;
 
 export const onlyUnique = (
@@ -32,63 +63,293 @@ export const onlyUnique = (
   self: ("P" | "D")[]
 ) => self.indexOf(value) === index;
 
-export default component$(() => {
-  const score = useSignal<("D" | "P")[]>([]);
-  const state = useStore<IState>({
-    bonus: BONUS,
-    malus: MALUS,
-    count: COUNT,
-    score: SCORE,
-    finish: FINISH,
-    victoria: VICTORIA,
-    multiplication: MULTIPLICATION,
+interface ICardProps {
+  card: ICard;
+  index: number;
+}
+
+type TScore = ("D" | "P")[];
+type TCardFace = "F" | "B";
+
+interface ICardState {
+  positions: ICard[];
+  scores: Record<number, TScore | undefined>;
+}
+
+export const StateContext = createContext<IState>("state-context");
+export const CardsContext = createContext<ICardState>("cards-context");
+
+export const Card = component$(({ card, index }: ICardProps) => {
+  const state = useContext<IState>(StateContext);
+  const cards = useContext<ICardState>(CardsContext);
+
+  const cardFace = useSignal<TCardFace>(state.initialFace);
+
+  const isVictoriaDeck = useResource$<boolean>(({ track }) => {
+    track(cards, "scores");
+    track(state, "victoria");
+
+    const cardsCounts = cards.positions.length;
+    const newCardScore = cards.scores[card.cardId] ?? [];
+
+    const calculateCardScore = () => {
+      if (
+        newCardScore.filter(onlyUnique).length === 1 &&
+        newCardScore.at(0) == "P"
+      ) {
+        return cardsCounts;
+      }
+      return newCardScore.reduce(
+        (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
+        0
+      );
+    };
+
+    return calculateCardScore() > state.victoria;
   });
 
   useWatch$(({ track }) => {
-    track(score, "value");
-    track(state, "malus");
-    track(state, "bonus");
-    track(state, "count");
-    const stringScore = score.value.join("");
-    if (["PD", "DPD", "DDDD"].includes(stringScore)) {
-      score.value = ["D"];
+    track(cards, "scores");
+    track(state, "initialFace");
+    if (cardFace.value !== state.initialFace) {
+      cardFace.value == state.initialFace;
     }
-    if (stringScore === "DPPP") {
-      score.value = ["P"];
-    }
-    if (
-      score.value.filter(onlyUnique).length === 1 &&
-      score.value.at(0) == "P"
-    ) {
-      state.score = state.count;
-      return;
-    }
-    state.score = score.value.reduce(
-      (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
-      0
+  });
+
+  return (
+    <div
+      onClick$={() => (cardFace.value = cardFace.value === "F" ? "B" : "F")}
+      class={`bg-cyan-500 p-4 ${index === 0 ? "block" : "hidden"}`}
+    >
+      <div class="mb-6 text-center">
+        <h2 class="font-bold tracking-tight text-gray-900">
+          <span class="block text-2xl text-white">Pozice: {index + 1}</span>
+          <span class="block text-2xl text-white mb-2">
+            Hodnocení: {cards.scores[card.cardId]?.join("")}
+          </span>
+          <span class="block text-indigo-600 text-lg">
+            {(cards.scores[card.cardId] ?? []).join("")}
+          </span>
+          <span class="block text-indigo-600 mt-2 underline text-sm">
+            <Resource
+              value={isVictoriaDeck}
+              onPending={() => <div />}
+              onRejected={() => <div />}
+              onResolved={(isVictoria) => (
+                <>{isVictoria ? "Victoria balíček" : ""}</>
+              )}
+            />
+          </span>
+        </h2>
+      </div>
+      <div class="my-12 text-center">
+        <h3 class="font-bold tracking-tight text-white">
+          Slovíčko:{" "}
+          {card.translations.at(cardFace.value === "F" ? 0 : -1)?.translation}
+        </h3>
+      </div>
+      <div class="flex items-center justify-center">
+        <div class="inline-flex rounded-md shadow">
+          <button
+            onClick$={() => {
+              const score = cards.scores[card.cardId] ?? [];
+
+              const calculateNextCardScore = (score: TScore): TScore => {
+                const stringScore = score.join("");
+                if (["PD", "DPD", "DDDD"].includes(stringScore)) {
+                  return ["D"];
+                }
+                if (stringScore === "DPPP") {
+                  return ["P"];
+                }
+                return [...score];
+              };
+
+              cards.scores[card.cardId] = calculateNextCardScore([
+                ...score,
+                "D",
+              ]);
+
+              const cardsCounts = cards.positions.length;
+              const newCardScore = cards.scores[card.cardId] ?? [];
+
+              const calculateCardScore = () => {
+                if (
+                  newCardScore.filter(onlyUnique).length === 1 &&
+                  newCardScore.at(0) == "P"
+                ) {
+                  return cardsCounts;
+                }
+                return newCardScore.reduce(
+                  (acc, value) =>
+                    acc + (value === "P" ? state.bonus : state.malus),
+                  0
+                );
+              };
+
+              const finalNumberScore = calculateCardScore();
+
+              const calculateCardPosition = () => {
+                if (finalNumberScore > state.victoria) {
+                  return cardsCounts;
+                }
+                return Math.max(
+                  Math.min(
+                    cardsCounts,
+                    finalNumberScore * state.multiplication
+                  ),
+                  1
+                );
+              };
+
+              const arrayMove = (arr: ICard[]) => {
+                const element = arr[index];
+                arr.splice(index, 1);
+                arr.splice(calculateCardPosition(), 0, element);
+                return [...arr];
+              };
+
+              cards.positions = arrayMove(cards.positions);
+            }}
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-5 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
+          >
+            Dříve
+          </button>
+        </div>
+        <div class="ml-3 inline-flex rounded-md shadow">
+          <button
+            onClick$={() => {
+              const score = cards.scores[card.cardId] ?? [];
+
+              const calculateNextCardScore = (score: TScore): TScore => {
+                const stringScore = score.join("");
+                if (["PD", "DPD", "DDDD"].includes(stringScore)) {
+                  return ["D"];
+                }
+                if (stringScore === "DPPP") {
+                  return ["P"];
+                }
+                return [...score];
+              };
+
+              cards.scores[card.cardId] = calculateNextCardScore([
+                ...score,
+                "P",
+              ]);
+
+              const cardsCounts = cards.positions.length;
+              const newCardScore = cards.scores[card.cardId] ?? [];
+
+              const calculateCardScore = () => {
+                if (
+                  newCardScore.filter(onlyUnique).length === 1 &&
+                  newCardScore.at(0) == "P"
+                ) {
+                  return cardsCounts;
+                }
+                return newCardScore.reduce(
+                  (acc, value) =>
+                    acc + (value === "P" ? state.bonus : state.malus),
+                  0
+                );
+              };
+
+              const finalNumberScore = calculateCardScore();
+
+              const calculateCardPosition = () => {
+                if (finalNumberScore > state.victoria) {
+                  return cardsCounts;
+                }
+                return Math.max(
+                  Math.min(
+                    cardsCounts,
+                    finalNumberScore * state.multiplication
+                  ),
+                  1
+                );
+              };
+
+              const arrayMove = (arr: ICard[]) => {
+                const element = arr[index];
+                arr.splice(index, 1);
+                arr.splice(calculateCardPosition(), 0, element);
+                return [...arr];
+              };
+
+              cards.positions = arrayMove(cards.positions);
+            }}
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium text-white hover:bg-indigo-700"
+          >
+            Později
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export default component$(() => {
+  const store = useStore<IRemoteStore>({});
+  useServerMount$(async () => {
+    const response = await fetch(
+      "https://api.studentgate.com/api/public/v1/textbooks"
+    );
+    store.textbooks = (await response.json()).filter(
+      ({ deckIds }: ITextbook) => deckIds.length > 0
     );
   });
 
-  const nextPosition = useResource$<number>(({ track }) => {
-    track(state, "score");
-    track(state, "count");
-    track(state, "victoria");
-    track(state, "multiplication");
-
-    if (state.score > state.victoria) {
-      return state.count;
+  useWatch$(async ({ track }) => {
+    track(store, "textbookId");
+    if (store.textbookId) {
+      const deckIds =
+        store.textbooks?.find(
+          ({ textbookId }) => textbookId == store.textbookId
+        )?.deckIds ?? [];
+      const response = await fetch(
+        `https://api.studentgate.com/api/public/v1/decks?limit=666${deckIds
+          .map((deckId: any) => `&deckIds[]=${deckId}`)
+          .join("")}`
+      );
+      store.decks = (await response.json()).data;
     }
-    return Math.max(
-      Math.min(state.count, state.score * state.multiplication),
-      1
-    );
   });
 
-  const isVictoriaDeck = useResource$<boolean>(({ track }) => {
-    track(state, "score");
-    track(state, "victoria");
-    return state.score > state.victoria;
+  useWatch$(async ({ track }) => {
+    track(store, "deckId");
+    if (store.deckId) {
+      const response = await fetch(
+        `https://api.studentgate.com/api/public/v1/decks/${store.deckId}/cards`
+      );
+      store.cards = await response.json();
+    }
   });
+
+  const state = useStore<IState>({
+    bonus: BONUS,
+    malus: MALUS,
+    finish: FINISH,
+    victoria: VICTORIA,
+    initialFace: INITIAL_FACE,
+    multiplication: MULTIPLICATION,
+  });
+
+  const cardState = useStore<ICardState>({
+    scores: {},
+    positions: [],
+  });
+
+  useWatch$(async ({ track }) => {
+    track(state);
+    track(store, "cards");
+    if (store.cards && store.cards.length > 0) {
+      cardState.scores = {};
+      cardState.positions = [...store.cards];
+    }
+  });
+
+  useContextProvider(StateContext, state);
+  useContextProvider(CardsContext, cardState);
 
   return (
     <div class="min-h-screen w-full flex justify-center items-center">
@@ -96,6 +357,52 @@ export default component$(() => {
         <h1 class="text-white text-center font-bold text-6xl mb-8">
           SGA <span>🧠</span>
         </h1>
+        <div class="mb-20">
+          <div class="mb-4">
+            <label for="texbook" class="block text-sm font-medium text-white">
+              Učebnice
+            </label>
+            <select
+              name="texbook"
+              id="textbook"
+              value={store.textbookId}
+              onInput$={(ev) =>
+                (store.textbookId = parseInt(
+                  (ev.target as HTMLInputElement).value
+                ))
+              }
+              class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option>Vyberte učebnici</option>
+              {store.textbooks?.map((textbook) => (
+                <option value={textbook.textbookId}>{textbook.name}</option>
+              ))}
+            </select>
+          </div>
+          {store.decks && (
+            <div class="mb-4">
+              <label for="deck" class="block text-sm font-medium text-white">
+                Balíček
+              </label>
+              <select
+                id="deck"
+                name="deck"
+                value={store.deckId}
+                onInput$={(ev) =>
+                  (store.deckId = parseInt(
+                    (ev.target as HTMLSelectElement).value
+                  ))
+                }
+                class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              >
+                <option>Vyberte balíček</option>
+                {store.decks?.map((deck) => (
+                  <option value={deck.id}>{deck.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <div>
           <div class="mb-4">
             <label
@@ -138,11 +445,32 @@ export default component$(() => {
             />
           </div>
           <div class="mb-4">
+            <label for="cardFace" class="block text-sm font-medium text-white">
+              Počáteční strana kartičky
+            </label>
+            <select
+              id="cardFace"
+              name="cardFace"
+              value={state.initialFace}
+              onInput$={(ev) => {
+                state.initialFace = (ev.target as HTMLSelectElement)
+                  .value as TCardFace;
+              }}
+              class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              {["F", "B"].map((face) => (
+                <option value={face}>
+                  {face === "F" ? "Přední" : "Zadní"}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div class="mb-4">
             <label
               for="multiplication"
               class="block text-sm font-medium text-white"
             >
-              Pozice x hodnocení
+              Pozice x hodnocení (pozice * hodnocení = skore kartičky)
             </label>
             <input
               type="number"
@@ -191,80 +519,34 @@ export default component$(() => {
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
-          <div class="mb-4">
-            <label for="bonus" class="block text-sm font-medium text-white">
-              Počet kartiček
-            </label>
-            <input
-              type="number"
-              name="bonus"
-              id="bonus"
-              value={state.count}
-              onInput$={(ev) =>
-                (state.count = parseInt((ev.target as HTMLInputElement).value))
-              }
-              class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-          </div>
         </div>
-        <div class="my-12 text-center">
-          <h2 class="font-bold tracking-tight text-gray-900">
-            <span class="block text-2xl text-white">
-              Pozice:{" "}
-              <Resource
-                value={nextPosition}
-                onPending={() => <div>0</div>}
-                onRejected={() => <div>0</div>}
-                onResolved={(position) => <>{position.toString()}</>}
-              />
-            </span>
-            <span class="block text-2xl text-white mb-2">
-              Hodnocení: {state.score}
-            </span>
-            <span class="block text-indigo-600 text-lg">
-              {score.value.join("")}
-            </span>
-            <span class="block text-indigo-600 mt-2 underline text-sm">
-              <Resource
-                value={isVictoriaDeck}
-                onPending={() => <div />}
-                onRejected={() => <div />}
-                onResolved={(isVictoria) => (
-                  <>{isVictoria ? "Victoria balíček" : ""}</>
-                )}
-              />
-            </span>
-          </h2>
+
+        <div class="my-4">
+          {cardState.positions.length > 0 && (
+            <div>
+              {cardState.positions?.map((card, index) => (
+                <Card card={card} index={index} />
+              ))}
+            </div>
+          )}
         </div>
-        <div class="flex items-center justify-center">
-          <div class="inline-flex rounded-md shadow">
-            <button
-              onClick$={() => (score.value = [...score.value, "D"])}
-              class="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-5 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
-            >
-              Dříve
-            </button>
-          </div>
-          <div class="ml-3 inline-flex rounded-md shadow">
-            <button
-              onClick$={() => (score.value = [...score.value, "P"])}
-              class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium text-white hover:bg-indigo-700"
-            >
-              Později
-            </button>
-          </div>
-        </div>
+
         <span
           class="text-white inline-block mt-4 w-full text-center underline cursor-pointer"
           onClick$={() => {
+            store.textbookId = undefined;
+            store.textbooks = undefined;
+            store.cards = undefined;
+            store.deckId = undefined;
+            store.decks = undefined;
+            cardState.scores = {};
+            cardState.positions = [];
             state.bonus = BONUS;
             state.malus = MALUS;
-            state.count = COUNT;
-            state.score = SCORE;
             state.finish = FINISH;
             state.victoria = VICTORIA;
+            state.initialFace = INITIAL_FACE;
             state.multiplication = MULTIPLICATION;
-            score.value = [];
           }}
         >
           Reset

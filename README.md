@@ -1,4 +1,8 @@
-# Qwik App ⚡️
+# SGA
+
+Language vocabulary long term memory algorithm playground using flash card principles.
+
+## Qwik App ⚡️
 
 - [Qwik Docs](https://qwik.builder.io/)
 - [Discord](https://qwik.builder.io/chat)
