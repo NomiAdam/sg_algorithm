@@ -79,6 +79,23 @@ interface ICardState {
 export const StateContext = createContext<IState>("state-context");
 export const CardsContext = createContext<ICardState>("cards-context");
 
+export const CardState = component$(({ card, index }: ICardProps) => {
+  const cards = useContext<ICardState>(CardsContext);
+  return (
+    <div class="bg-cyan-900 rounded-2xl p-4 text-center">
+      <span class="block text-2xl text-white">{index + 1}</span>
+      <span class="block text-2xl text-white mb-2">
+        {cards.scores[card.cardId]?.join("")}
+      </span>
+      <div class="my-2 text-center">
+        <h3 class="font-bold tracking-tight text-white">
+          {card.translations.at(0)?.translation}
+        </h3>
+      </div>
+    </div>
+  );
+});
+
 export const Card = component$(({ card, index }: ICardProps) => {
   const state = useContext<IState>(StateContext);
   const cards = useContext<ICardState>(CardsContext);
@@ -119,7 +136,7 @@ export const Card = component$(({ card, index }: ICardProps) => {
   return (
     <div
       onClick$={() => (cardFace.value = cardFace.value === "F" ? "B" : "F")}
-      class={`bg-cyan-500 p-4 ${index === 0 ? "block" : "hidden"}`}
+      class={`bg-cyan-500 p-4 ${index === 0 ? "block" : "hidden"} rounded-2xl`}
     >
       <div class="mb-6 text-center">
         <h2 class="font-bold tracking-tight text-gray-900">
@@ -529,6 +546,13 @@ export default component$(() => {
               ))}
             </div>
           )}
+        </div>
+
+        <div class="my-4 overflow-x-auto flex gap-4 flex-row">
+          {cardState.positions.length > 0 &&
+            cardState.positions?.map((card, index) => (
+              <CardState card={card} index={index} />
+            ))}
         </div>
 
         <span
