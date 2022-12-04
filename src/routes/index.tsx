@@ -136,7 +136,9 @@ export const Card = component$(({ card, index }: ICardProps) => {
   return (
     <div
       onClick$={() => (cardFace.value = cardFace.value === "F" ? "B" : "F")}
-      class={`bg-cyan-500 p-4 ${index === 0 ? "block" : "hidden"} rounded-2xl`}
+      class={`bg-cyan-500 p-4 ${
+        index === 0 ? "block" : "hidden"
+      } max-w-lg rounded-2xl`}
     >
       <div class="mb-6 text-center">
         <h2 class="font-bold tracking-tight text-gray-900">
@@ -538,7 +540,7 @@ export default component$(() => {
           </div>
         </div>
 
-        <div class="my-4">
+        <div class="my-4 flex justify-center">
           {cardState.positions.length > 0 && (
             <div>
               {cardState.positions?.map((card, index) => (
@@ -575,6 +577,27 @@ export default component$(() => {
         >
           Reset
         </span>
+
+        <article class="text-white flex flex-col gap-4">
+          <h2>Pevné podmínky</h2>
+          <article class="border p-4">
+            <h3 class="font-bold">Podmínky pro skore</h3>
+            <p>"PD", "DPD" nebo "DDDD" = "D"</p>
+            <p>"DPPP", "DPD" nebo "DDDD" = "P"</p>
+          </article>
+          <article class="border p-4">
+            <h3 class="font-bold">Podmínky pro pozici</h3>
+            <p>
+              Když se skore kartičky skládá z libovolného množství za sebou
+              jdoucích <q>P</q> finální pozice je vždy <strong>Konec</strong>{" "}
+              balíčku
+            </p>
+            <p>
+              Když má kartička záporné skore je finální pozice vždy{" "}
+              <strong>2</strong> (za následující kartičkou)
+            </p>
+          </article>
+        </article>
       </div>
     </div>
   );
