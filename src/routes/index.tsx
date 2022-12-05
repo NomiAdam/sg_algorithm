@@ -494,6 +494,7 @@ export default component$(() => {
             <input
               type="number"
               inputMode="decimal"
+              pattern="[0-9.,]+"
               name="multiplication"
               id="multiplication"
               step=".1"
@@ -513,6 +514,7 @@ export default component$(() => {
             </label>
             <input
               type="number"
+              pattern="[0-9.,]+"
               inputMode="decimal"
               name="bonus"
               id="bonus"
