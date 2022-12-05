@@ -492,7 +492,7 @@ export default component$(() => {
               Pozice x hodnocení (pozice * hodnocení = skore kartičky)
             </label>
             <input
-              type="number"
+              type="decimalNumber"
               inputMode="decimal"
               pattern="[0-9.,]+"
               name="multiplication"
@@ -513,7 +513,7 @@ export default component$(() => {
               Bonus
             </label>
             <input
-              type="number"
+              type="decimalNumber"
               pattern="[0-9.,]+"
               inputMode="decimal"
               name="bonus"
