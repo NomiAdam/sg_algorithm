@@ -489,57 +489,52 @@ export default component$(() => {
               for="multiplication"
               class="block text-sm font-medium text-white"
             >
-              Pozice x hodnocení (pozice * hodnocení = skore kartičky)
+              Pozice x hodnocení (pozice * hodnocení = skore kartičky){" "}
+              {state.multiplication}
             </label>
             <input
-              type="number"
-              pattern="[0-9.,]+"
+              type="text"
               name="multiplication"
               id="multiplication"
-              step="0.1"
-              min={0}
-              value={state.multiplication}
+              value={state.multiplication.toString()}
               onInput$={(ev) => {
-                state.multiplication = parseFloat(
-                  (ev.target as HTMLInputElement).value
-                );
+                const value = parseFloat((ev.target as HTMLInputElement).value);
+                state.multiplication = Number.isNaN(value)
+                  ? MULTIPLICATION
+                  : value;
               }}
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
           <div class="mb-4">
             <label for="bonus" class="block text-sm font-medium text-white">
-              Bonus
+              Bonus {state.bonus}
             </label>
             <input
-              type="number"
-              pattern="[0-9.,]+"
+              type="text"
               name="bonus"
               id="bonus"
-              step="0.1"
-              value={state.bonus}
+              value={state.bonus.toString()}
               onInput$={(ev) => {
-                state.bonus = parseFloat((ev.target as HTMLInputElement).value);
+                const value = parseFloat((ev.target as HTMLInputElement).value);
+                state.bonus = Number.isNaN(value) ? BONUS : value;
               }}
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
           <div class="mb-4">
-            <label for="malues" class="block text-sm font-medium text-white">
-              Malus
+            <label for="malus" class="block text-sm font-medium text-white">
+              Malus {state.malus}
             </label>
             <input
-              type="number"
-              pattern="[0-9.,]+"
+              type="text"
               name="malus"
-              id="malues"
-              step="0.1"
-              value={state.malus}
-              onInput$={(ev) =>
-                (state.malus = parseFloat(
-                  (ev.target as HTMLInputElement).value
-                ))
-              }
+              id="malus"
+              value={state.malus.toString()}
+              onInput$={(ev) => {
+                const value = parseFloat((ev.target as HTMLInputElement).value);
+                state.malus = Number.isNaN(value) ? MALUS : value;
+              }}
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
