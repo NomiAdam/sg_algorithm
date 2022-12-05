@@ -492,16 +492,16 @@ export default component$(() => {
               Pozice x hodnocení (pozice * hodnocení = skore kartičky)
             </label>
             <input
-              type="decimalNumber"
-              inputMode="decimal"
+              type="number"
               pattern="[0-9.,]+"
+              inputMode="decimal"
               name="multiplication"
               id="multiplication"
-              step=".1"
+              step="0.1"
               min={0}
               value={state.multiplication}
               onInput$={(ev) => {
-                state.multiplication = parseInt(
+                state.multiplication = parseFloat(
                   (ev.target as HTMLInputElement).value
                 );
               }}
@@ -513,15 +513,15 @@ export default component$(() => {
               Bonus
             </label>
             <input
-              type="decimalNumber"
+              type="number"
               pattern="[0-9.,]+"
               inputMode="decimal"
               name="bonus"
               id="bonus"
-              step=".1"
+              step="0.1"
               value={state.bonus}
               onInput$={(ev) => {
-                state.bonus = parseInt((ev.target as HTMLInputElement).value);
+                state.bonus = parseFloat((ev.target as HTMLInputElement).value);
               }}
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
@@ -532,12 +532,16 @@ export default component$(() => {
             </label>
             <input
               type="number"
+              pattern="[0-9.,]+"
+              inputMode="decimal"
               name="malus"
               id="malues"
-              step=".1"
+              step="0.1"
               value={state.malus}
               onInput$={(ev) =>
-                (state.malus = parseInt((ev.target as HTMLInputElement).value))
+                (state.malus = parseFloat(
+                  (ev.target as HTMLInputElement).value
+                ))
               }
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
