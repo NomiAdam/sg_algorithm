@@ -9,8 +9,13 @@ import {
   useContextProvider,
   useContext,
   useSignal,
+  $,
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
+
+type TAnswer = "D" | "P";
+type TScore = TAnswer[];
+type TCardFace = "F" | "B";
 
 interface IState {
   bonus: number;
@@ -57,19 +62,13 @@ export const VICTORIA = 3;
 export const INITIAL_FACE = "F";
 export const MULTIPLICATION = 5;
 
-export const onlyUnique = (
-  value: "P" | "D",
-  index: number,
-  self: ("P" | "D")[]
-) => self.indexOf(value) === index;
+export const onlyUnique = (value: TAnswer, index: number, self: TScore) =>
+  self.indexOf(value) === index;
 
 interface ICardProps {
   card: ICard;
   index: number;
 }
-
-type TScore = ("D" | "P")[];
-type TCardFace = "F" | "B";
 
 interface ICardState {
   positions: ICard[];
@@ -133,6 +132,69 @@ export const Card = component$(({ card, index }: ICardProps) => {
     }
   });
 
+  const arrayMove = $((arr: ICard[], nextCardPosition: number) => {
+    const element = arr[index];
+    arr.splice(index, 1);
+    arr.splice(nextCardPosition, 0, element);
+    return [...arr];
+  });
+
+  const calculateNextCardScore = $((score: TScore): TScore => {
+    const stringScore = score.join("");
+    if (["PD", "DPD", "DDDD"].includes(stringScore)) {
+      return ["D"];
+    }
+    if (stringScore === "DPPP") {
+      return ["P"];
+    }
+    return [...score];
+  });
+
+  const calculateNextCardPosition = $(async (score: TScore) => {
+    const cardsCounts = cards.positions.length;
+
+    const calculateCardScore = () => {
+      if (score.filter(onlyUnique).length === 1 && score.at(0) == "P") {
+        return cardsCounts;
+      }
+      return score.reduce(
+        (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
+        0
+      );
+    };
+
+    const finalNumberScore = calculateCardScore();
+
+    if (finalNumberScore > state.victoria) {
+      return cardsCounts;
+    }
+
+    return Math.max(
+      Math.min(cardsCounts, finalNumberScore * state.multiplication),
+      1
+    );
+  });
+
+  const handleCardAnswer = $(async (answer: TAnswer) => {
+    const score = cards.scores[card.cardId] ?? [];
+    cards.scores[card.cardId] = await calculateNextCardScore([
+      ...score,
+      answer,
+    ]);
+    const nextCardPosition = await calculateNextCardPosition(
+      cards.scores[card.cardId] ?? []
+    );
+    cards.positions = await arrayMove(cards.positions, nextCardPosition);
+  });
+
+  const calculateNextPosition = $(async (answer: TAnswer) => {
+    const score = cards.scores[card.cardId] ?? [];
+    const nextScore = await calculateNextCardScore([...score, answer]);
+    return calculateNextCardPosition(nextScore).then((score) =>
+      Math.round(score)
+    );
+  });
+
   return (
     <div
       onClick$={() => (cardFace.value = cardFace.value === "F" ? "B" : "F")}
@@ -170,136 +232,24 @@ export const Card = component$(({ card, index }: ICardProps) => {
       <div class="flex items-center justify-center">
         <div class="inline-flex rounded-md shadow">
           <button
-            onClick$={() => {
-              const score = cards.scores[card.cardId] ?? [];
-
-              const calculateNextCardScore = (score: TScore): TScore => {
-                const stringScore = score.join("");
-                if (["PD", "DPD", "DDDD"].includes(stringScore)) {
-                  return ["D"];
-                }
-                if (stringScore === "DPPP") {
-                  return ["P"];
-                }
-                return [...score];
-              };
-
-              cards.scores[card.cardId] = calculateNextCardScore([
-                ...score,
-                "D",
-              ]);
-
-              const cardsCounts = cards.positions.length;
-              const newCardScore = cards.scores[card.cardId] ?? [];
-
-              const calculateCardScore = () => {
-                if (
-                  newCardScore.filter(onlyUnique).length === 1 &&
-                  newCardScore.at(0) == "P"
-                ) {
-                  return cardsCounts;
-                }
-                return newCardScore.reduce(
-                  (acc, value) =>
-                    acc + (value === "P" ? state.bonus : state.malus),
-                  0
-                );
-              };
-
-              const finalNumberScore = calculateCardScore();
-
-              const calculateCardPosition = () => {
-                if (finalNumberScore > state.victoria) {
-                  return cardsCounts;
-                }
-                return Math.max(
-                  Math.min(
-                    cardsCounts,
-                    finalNumberScore * state.multiplication
-                  ),
-                  1
-                );
-              };
-
-              const arrayMove = (arr: ICard[]) => {
-                const element = arr[index];
-                arr.splice(index, 1);
-                arr.splice(calculateCardPosition(), 0, element);
-                return [...arr];
-              };
-
-              cards.positions = arrayMove(cards.positions);
-            }}
+            onClick$={() => handleCardAnswer("D")}
             class="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-5 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
           >
             Dříve
+            {calculateNextPosition("D").then((position) => (
+              <span class="font-bold mx-2">({position})</span>
+            ))}
           </button>
         </div>
         <div class="ml-3 inline-flex rounded-md shadow">
           <button
-            onClick$={() => {
-              const score = cards.scores[card.cardId] ?? [];
-
-              const calculateNextCardScore = (score: TScore): TScore => {
-                const stringScore = score.join("");
-                if (["PD", "DPD", "DDDD"].includes(stringScore)) {
-                  return ["D"];
-                }
-                if (stringScore === "DPPP") {
-                  return ["P"];
-                }
-                return [...score];
-              };
-
-              cards.scores[card.cardId] = calculateNextCardScore([
-                ...score,
-                "P",
-              ]);
-
-              const cardsCounts = cards.positions.length;
-              const newCardScore = cards.scores[card.cardId] ?? [];
-
-              const calculateCardScore = () => {
-                if (
-                  newCardScore.filter(onlyUnique).length === 1 &&
-                  newCardScore.at(0) == "P"
-                ) {
-                  return cardsCounts;
-                }
-                return newCardScore.reduce(
-                  (acc, value) =>
-                    acc + (value === "P" ? state.bonus : state.malus),
-                  0
-                );
-              };
-
-              const finalNumberScore = calculateCardScore();
-
-              const calculateCardPosition = () => {
-                if (finalNumberScore > state.victoria) {
-                  return cardsCounts;
-                }
-                return Math.max(
-                  Math.min(
-                    cardsCounts,
-                    finalNumberScore * state.multiplication
-                  ),
-                  1
-                );
-              };
-
-              const arrayMove = (arr: ICard[]) => {
-                const element = arr[index];
-                arr.splice(index, 1);
-                arr.splice(calculateCardPosition(), 0, element);
-                return [...arr];
-              };
-
-              cards.positions = arrayMove(cards.positions);
-            }}
+            onClick$={() => handleCardAnswer("P")}
             class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-5 py-3 text-base font-medium text-white hover:bg-indigo-700"
           >
             Později
+            {calculateNextPosition("P").then((position) => (
+              <span class="font-bold mx-2">({position})</span>
+            ))}
           </button>
         </div>
       </div>
