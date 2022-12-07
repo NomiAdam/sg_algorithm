@@ -144,7 +144,7 @@ export const Card = component$(({ card, index }: ICardProps) => {
     if (["PD", "DPD", "DDDD"].includes(stringScore)) {
       return ["D"];
     }
-    if (stringScore === "DPPP") {
+    if (["DPPP", "PDP", "PPPP"].includes(stringScore)) {
       return ["P"];
     }
     return [...score];
@@ -533,7 +533,7 @@ export default component$(() => {
           <article class="border p-4">
             <h3 class="font-bold">Podmínky pro skore</h3>
             <p>"PD", "DPD" nebo "DDDD" = "D"</p>
-            <p>"DPPP", "DPD" nebo "DDDD" = "P"</p>
+            <p>"DPPP", "PDP" nebo "PPPP" = "P"</p>
           </article>
           <article class="border p-4">
             <h3 class="font-bold">Podmínky pro pozici</h3>
