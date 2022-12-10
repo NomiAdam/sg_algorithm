@@ -146,8 +146,11 @@ export const Card = component$(({ card, index }: ICardProps) => {
     if (["PD", "DPD", "DDDD"].includes(stringScore)) {
       return ["D"];
     }
-    if (["DPPP", "PDP", "PPPP"].includes(stringScore)) {
+    if (["DPPP", "PPPP"].includes(stringScore)) {
       return ["P"];
+    }
+    if (stringScore.endsWith("PPP")) {
+      return ["P", "P", "P"];
     }
     return [...score];
   });
@@ -548,7 +551,6 @@ export default component$(() => {
           class="text-white inline-block mt-4 w-full text-center underline cursor-pointer"
           onClick$={() => {
             store.textbookId = undefined;
-            store.textbooks = undefined;
             store.cards = undefined;
             store.deckId = undefined;
             store.decks = undefined;
@@ -571,7 +573,8 @@ export default component$(() => {
           <article class="border p-4">
             <h3 class="font-bold">Podmínky pro skore</h3>
             <p>"PD", "DPD" nebo "DDDD" = "D"</p>
-            <p>"DPPP", "PDP" nebo "PPPP" = "P"</p>
+            <p>"DPPP" nebo "PPPP" = "P"</p>
+            <p>Skore končí na kombinace "xPPP" = "PPP" (Victoria balíček)</p>
           </article>
           <article class="border p-4">
             <h3 class="font-bold">Podmínky pro pozici</h3>
