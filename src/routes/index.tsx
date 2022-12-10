@@ -22,6 +22,7 @@ interface IState {
   malus: number;
   finish: number;
   victoria: number;
+  initialScore: number;
   multiplication: number;
   initialFace: TCardFace;
 }
@@ -61,6 +62,7 @@ export const MALUS = -0.5;
 export const VICTORIA = 3;
 export const INITIAL_FACE = "F";
 export const MULTIPLICATION = 5;
+export const INITIAL_SCORE = 1.5;
 
 export const onlyUnique = (value: TAnswer, index: number, self: TScore) =>
   self.indexOf(value) === index;
@@ -157,9 +159,11 @@ export const Card = component$(({ card, index }: ICardProps) => {
       if (score.filter(onlyUnique).length === 1 && score.at(0) == "P") {
         return cardsCounts;
       }
-      return score.reduce(
-        (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
-        0
+      return (
+        score.reduce(
+          (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
+          0
+        ) + state.initialScore
       );
     };
 
@@ -195,6 +199,16 @@ export const Card = component$(({ card, index }: ICardProps) => {
     );
   });
 
+  const calculateNextScore = $(async () => {
+    const score = cards.scores[card.cardId] ?? [];
+    return (
+      (await calculateNextCardScore(score)).reduce(
+        (acc, value) => acc + (value === "P" ? state.bonus : state.malus),
+        0
+      ) + state.initialScore
+    );
+  });
+
   return (
     <div
       onClick$={() => (cardFace.value = cardFace.value === "F" ? "B" : "F")}
@@ -204,9 +218,11 @@ export const Card = component$(({ card, index }: ICardProps) => {
     >
       <div class="mb-6 text-center">
         <h2 class="font-bold tracking-tight text-gray-900">
-          <span class="block text-2xl text-white">Pozice: {index + 1}</span>
           <span class="block text-2xl text-white mb-2">
-            Hodnocení: {cards.scores[card.cardId]?.join("")}
+            Hodnocení:{" "}
+            {calculateNextScore().then((score) => (
+              <span class="font-bold mx-2">({score})</span>
+            ))}
           </span>
           <span class="block text-indigo-600 text-lg">
             {(cards.scores[card.cardId] ?? []).join("")}
@@ -300,6 +316,7 @@ export default component$(() => {
     finish: FINISH,
     victoria: VICTORIA,
     initialFace: INITIAL_FACE,
+    initialScore: INITIAL_SCORE,
     multiplication: MULTIPLICATION,
   });
 
@@ -381,10 +398,10 @@ export default component$(() => {
               Hranice dokončení
             </label>
             <input
-              type="number"
-              name="finishThreshold"
-              id="finishThreshold"
               min={0}
+              type="number"
+              id="finishThreshold"
+              name="finishThreshold"
               value={state.finish}
               onInput$={(ev) =>
                 (state.finish = parseInt((ev.target as HTMLInputElement).value))
@@ -401,8 +418,8 @@ export default component$(() => {
             </label>
             <input
               type="number"
-              name="victoriaThreshold"
               id="victoriaThreshold"
+              name="victoriaThreshold"
               min={0}
               value={state.victoria}
               onInput$={(ev) =>
@@ -439,13 +456,12 @@ export default component$(() => {
               for="multiplication"
               class="block text-sm font-medium text-white"
             >
-              Pozice x hodnocení (pozice * hodnocení = skore kartičky){" "}
-              {state.multiplication}
+              Pozice x hodnocení (pozice * hodnocení = skore kartičky)
             </label>
             <input
               type="text"
-              name="multiplication"
               id="multiplication"
+              name="multiplication"
               value={state.multiplication.toString()}
               onInput$={(ev) => {
                 const value = parseFloat((ev.target as HTMLInputElement).value);
@@ -458,7 +474,7 @@ export default component$(() => {
           </div>
           <div class="mb-4">
             <label for="bonus" class="block text-sm font-medium text-white">
-              Bonus {state.bonus}
+              Bonus
             </label>
             <input
               type="text"
@@ -474,7 +490,7 @@ export default component$(() => {
           </div>
           <div class="mb-4">
             <label for="malus" class="block text-sm font-medium text-white">
-              Malus {state.malus}
+              Malus
             </label>
             <input
               type="text"
@@ -484,6 +500,27 @@ export default component$(() => {
               onInput$={(ev) => {
                 const value = parseFloat((ev.target as HTMLInputElement).value);
                 state.malus = Number.isNaN(value) ? MALUS : value;
+              }}
+              class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+          </div>
+          <div class="mb-4">
+            <label
+              for="initialScore"
+              class="block text-sm font-medium text-white"
+            >
+              Počáteční hodnocení kartičky
+            </label>
+            <input
+              type="text"
+              id="initialScore"
+              name="initialScore"
+              value={state.initialScore.toString()}
+              onInput$={(ev) => {
+                const value = parseFloat((ev.target as HTMLInputElement).value);
+                state.initialScore = Number.isNaN(value)
+                  ? INITIAL_SCORE
+                  : value;
               }}
               class="mt-2 block w-full p-2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
@@ -519,6 +556,7 @@ export default component$(() => {
             cardState.positions = [];
             state.bonus = BONUS;
             state.malus = MALUS;
+            state.initialScore = INITIAL_SCORE;
             state.finish = FINISH;
             state.victoria = VICTORIA;
             state.initialFace = INITIAL_FACE;
